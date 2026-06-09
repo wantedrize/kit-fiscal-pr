@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="es-PR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kit Fiscal del Negociante Boricua 2026 — MA Tax & Accounting</title>
+  <meta name="description" content="Calculadora IVU, retención 10%, tracker de gastos mensual y calendario Hacienda 2026. Descárgalo y úsalo sin internet." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f172a; --surface: #1e293b; --border: #334155;
+      --accent: #22d3ee; --accent2: #a78bfa; --green: #4ade80;
+      --red: #f87171; --text: #e2e8f0; --muted: #94a3b8;
+      --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+    /* layout */
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+    header .logo { font-size: 1.1rem; font-weight: 800; }
+    header .logo span { color: var(--accent); }
+    header .badge { margin-left: auto; font-size: .75rem; background: var(--accent); color: #0f172a; padding: 3px 10px; border-radius: 999px; font-weight: 700; }
+
+    .tabs { display: flex; gap: 4px; padding: 16px 20px 0; border-bottom: 1px solid var(--border); overflow-x: auto; }
+    .tab { padding: 8px 18px; border-radius: 8px 8px 0 0; border: 1px solid transparent; border-bottom: none; font-weight: 600; font-size: .875rem; cursor: pointer; background: transparent; color: var(--muted); transition: .15s; white-space: nowrap; }
+    .tab:hover { color: var(--text); }
+    .tab.active { background: var(--surface); border-color: var(--border); color: var(--accent); }
+
+    .panel { display: none; padding: 24px 20px; max-width: 800px; }
+    .panel.active { display: block; }
+
+    /* cards */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 14px; color: var(--accent); }
+    .card h3 { font-size: .9rem; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+
+    /* form controls */
+    label { font-size: .8rem; color: var(--muted); display: block; margin-bottom: 4px; margin-top: 10px; }
+    input, select { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: .95rem; outline: none; transition: border .15s; }
+    input:focus, select:focus { border-color: var(--accent); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media(max-width:480px){.row{grid-template-columns:1fr;}}
+    .result { background: var(--bg); border-radius: 8px; padding: 14px; margin-top: 14px; }
+    .result-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: .9rem; }
+    .result-row:last-child { border: none; font-weight: 700; font-size: 1rem; }
+    .result-row .val { font-weight: 600; }
+    .val.green { color: var(--green); }
+    .val.red { color: var(--red); }
+    .val.cyan { color: var(--accent); }
+    .btn { padding: 10px 20px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: .9rem; transition: .15s; }
+    .btn-primary { background: var(--accent); color: #0f172a; }
+    .btn-primary:hover { opacity: .85; }
+    .btn-danger { background: var(--red); color: #fff; font-size: .8rem; padding: 6px 14px; }
+    .btn-danger:hover { opacity: .85; }
+    .btn-sm { padding: 5px 12px; font-size: .8rem; }
+
+    /* tracker table */
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    th { text-align: left; padding: 8px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+    td { padding: 8px; border-bottom: 1px solid #1e293b; }
+    tr:last-child td { border: none; }
+    .tipo-ingreso { color: var(--green); font-weight: 600; }
+    .tipo-gasto { color: var(--red); font-weight: 600; }
+
+    /* calendar */
+    .cal-item { display: flex; gap: 14px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .cal-item:last-child { border: none; }
+    .cal-date { background: var(--accent2); color: #fff; border-radius: 8px; padding: 4px 10px; font-weight: 700; font-size: .8rem; min-width: 80px; text-align: center; }
+    .cal-date.urgent { background: var(--red); }
+    .cal-date.done { background: #334155; color: var(--muted); }
+    .cal-info h4 { font-weight: 600; font-size: .9rem; }
+    .cal-info p { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+
+    /* summary stats */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
+    .stat .num { font-size: 1.4rem; font-weight: 800; }
+    .stat .lbl { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+
+    .note { background: #1e293b; border-left: 3px solid var(--accent2); padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: .82rem; color: var(--muted); margin-top: 10px; }
+    .note strong { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Kit Fiscal <span>Boricua</span> 2026 🇵🇷</div>
+  <div class="badge">MA Tax & Accounting</div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('ivu')">🧮 Calculadora IVU</button>
+  <button class="tab" onclick="showTab('retencion')">💼 Retención 10%</button>
+  <button class="tab" onclick="showTab('tracker')">📒 Tracker Mensual</button>
+  <button class="tab" onclick="showTab('calendario')">📅 Calendario Hacienda</button>
+  <button class="tab" onclick="showTab('guia')">📋 Guía Rápida</button>
+</div>
+
+<!-- ===== TAB IVU ===== -->
+<div id="tab-ivu" class="panel active">
+  <div class="card">
+    <h2>🧮 Calculadora de IVU</h2>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;">IVU en Puerto Rico: 11.5% estatal + municipal. La tasa estándar es <strong style="color:var(--text)">11.5%</strong>. Algunos municipios cobran hasta 1% adicional.</p>
+
+    <label>Tasa de IVU (%)</label>
+    <select id="ivu-rate" onchange="calcIVU()">
+      <option value="11.5" selected>11.5% (estándar PR)</option>
+      <option value="10.5">10.5% (servicios profesionales)</option>
+      <option value="1">1% (reventa mayorista)</option>
+      <option value="0">0% (exento)</option>
+    </select>
+
+    <div class="row" style="margin-top:14px;">
+      <div>
+        <h3>Precio SIN IVU → calcular total</h3>
+        <label>Precio base ($)</label>
+        <input type="number" id="precio-sin-ivu" placeholder="100.00" oninput="calcFromBase()" step="0.01" />
+        <div class="result" id="res-base" style="display:none;"></div>
+      </div>
+      <div>
+        <h3>Precio CON IVU → extraer base</h3>
+        <label>Precio total cobrado ($)</label>
+        <input type="number" id="precio-con-ivu" placeholder="111.50" oninput="calcFromTotal()" step="0.01" />
+        <div class="result" id="res-total" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:16px;">
+      <strong>¿Cuándo cobrar IVU?</strong> Ventas de artículos tangibles: 11.5%. Servicios profesionales facturados a negocios: 10.5%. Servicios B2C (al consumidor final): 11.5%. Servicios de reventa/intermediarios designados: 1%. Consulta siempre con tu CPA para casos específicos.
+    </div>
+  </div>
+</div>
+
+<!-- ===== TAB RETENCIÓN ===== -->
+<div id="tab-retencion" class="panel">
+  <div class="card">
+    <h2>💼 Retención del 10% (Servicios Profesionales)</h2>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;">
+      Bajo la Sección 1062.03 del Código de Rentas Internas, los negocios que pagan servicios profesionales deben <strong style="color:var(--text)">retener el 10%</strong> del pago y remitirlo a Hacienda. Los primeros <strong style="color:var(--text)">$1,500 pagados en el año</strong> a cada proveedor están <strong style="color:var(--text)">exentos</strong>.
+    </p>
+
+    <label>Monto a pagar al proveedor ($)</label>
+    <input type="number" id="ret-monto" placeholder="2500.00" oninput="calcRetencion()" step="0.01" />
+
+    <label>¿Cuánto llevas pagado a este proveedor este año? ($)</label>
+    <input type="number" id="ret-acumulado" placeholder="0.00" oninput="calcRetencion()" step="0.01" value="0" />
+
+    <label>¿Tiene relevo de retención (waiver)?</label>
+    <select id="ret-waiver" onchange="calcRetencion()">
+      <option value="no">No tiene waiver</option>
+      <option value="si">Sí tiene waiver — no retener</option>
+    </select>
+
+    <div class="result" id="res-retencion" style="margin-top:16px;"></div>
+
+    <div class="note" style="margin-top:14px;">
+      <strong>¿Qué reportar?</strong> La retención se reporta en el formulario <strong style="color:var(--text)">480.6 SP</strong> (informativa). El proveedor recibe una copia para reportar el ingreso en su planilla. Puedes solicitar el relevo de retención directamente en SURI si tus ingresos totales no exceden cierto umbral.
+    </div>
+  </div>
+</div>
+
+<!-- ===== TAB TRACKER ===== -->
+<div id="tab-tracker" class="panel">
+  <div class="card">
+    <h2>📒 Tracker de Ingresos y Gastos</h2>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:14px;">Tus datos se guardan en este dispositivo (localStorage). Nadie más los ve.</p>
+
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+      <select id="trk-mes" style="width:auto;">
+        <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+        <option value="4">Abril</option><option value="5">Mayo</option><option value="6" selected>Junio</option>
+        <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+        <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+      </select>
+      <select id="trk-anio" style="width:auto;"><option>2026</option><option>2025</option></select>
+      <button class="btn btn-primary btn-sm" onclick="loadTracker()">Ver mes</button>
+      <button class="btn btn-danger" onclick="clearMonth()">Borrar mes</button>
+    </div>
+
+    <div class="stats" id="trk-stats">
+      <div class="stat"><div class="num green" id="s-ingresos">$0</div><div class="lbl">Ingresos</div></div>
+      <div class="stat"><div class="num red" id="s-gastos">$0</div><div class="lbl">Gastos</div></div>
+      <div class="stat"><div class="num cyan" id="s-balance">$0</div><div class="lbl">Balance neto</div></div>
+      <div class="stat"><div class="num" id="s-ivu-cobrado">$0</div><div class="lbl">IVU cobrado</div></div>
+    </div>
+
+    <!-- add entry -->
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:14px;" id="add-row">
+      <div>
+        <label>Descripción</label>
+        <input id="trk-desc" placeholder="Ej: Pago cliente ABC" />
+      </div>
+      <div>
+        <label>Monto ($)</label>
+        <input id="trk-amt" type="number" placeholder="0.00" step="0.01" />
+      </div>
+      <div>
+        <select id="trk-tipo" style="width:auto;">
+          <option value="ingreso">💚 Ingreso</option>
+          <option value="gasto">🔴 Gasto</option>
+          <option value="ivu">🟡 IVU cobrado</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="addEntry()" style="margin-bottom:18px;">+ Añadir</button>
+
+    <table id="trk-table">
+      <thead><tr><th>Tipo</th><th>Descripción</th><th>Monto</th><th>Fecha</th><th></th></tr></thead>
+      <tbody id="trk-tbody"></tbody>
+    </table>
+
+    <div style="margin-top:14px;display:flex;gap:8px;">
+      <button class="btn btn-primary btn-sm" onclick="exportCSV()">⬇ Exportar CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TAB CALENDARIO ===== -->
+<div id="tab-calendario" class="panel">
+  <div class="card">
+    <h2>📅 Fechas Clave — Hacienda & Cumplimiento 2026</h2>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;">Fechas de vencimiento principales para negocios en Puerto Rico. Verifica siempre en Hacienda.pr.gov o con tu CPA.</p>
+
+    <div id="cal-list"></div>
+
+    <div class="note" style="margin-top:14px;">
+      <strong>Tip:</strong> Si la fecha cae en sábado, domingo o día feriado, el vencimiento se corre al próximo día hábil. Radicar tarde puede resultar en penalidades del <strong style="color:var(--text)">5% mensual</strong> del balance + intereses.
+    </div>
+  </div>
+</div>
+
+<!-- ===== TAB GUÍA ===== -->
+<div id="tab-guia" class="panel">
+  <div class="card">
+    <h2>📋 Guía Rápida: Lo que todo negocio boricua debe saber</h2>
+
+    <h3 style="color:var(--accent);margin-top:0;">1. IVU — Impuesto sobre Ventas y Uso</h3>
+    <p style="font-size:.85rem;color:var(--muted);">El IVU se cobra al consumidor final y TÚ se lo remites a Hacienda mensualmente via SURI. La tasa estándar es 11.5% (10.5% + 1% municipal). No es ingreso tuyo — es un dinero en tránsito. Guárdalo aparte desde el momento que lo cobras.</p>
+
+    <h3 style="color:var(--accent2);margin-top:16px;">2. Retención del 10% (Sección 1062.03)</h3>
+    <p style="font-size:.85rem;color:var(--muted);">Cuando un negocio te paga servicios profesionales, está obligado a retenerte el 10% y remitirlo a Hacienda. Eso NO es tu dinero que "pierdes" — lo acreditas contra tu planilla al final del año. Guarda todos tus formularios 480.6 SP.</p>
+
+    <h3 style="color:var(--green);margin-top:16px;">3. La importancia de los registros mensuales</h3>
+    <p style="font-size:.85rem;color:var(--muted);">Sin registros = sin deducciones. Cada gasto de negocio (luz, teléfono, materiales, gasolina de entregas) es una deducción potencial. Usa el Tracker de este kit para capturar todo durante el mes — no después. Un buen CPA puede deducirte miles de dólares si tienes los registros.</p>
+
+    <h3 style="color:var(--accent);margin-top:16px;">4. SURI — tu portal de cumplimiento</h3>
+    <p style="font-size:.85rem;color:var(--muted);">La mayoría de las obligaciones tributarias en PR se manejan en <strong style="color:var(--text)">suri.hacienda.pr.gov</strong>: IVU mensual, retenciones, planillas de corporaciones, solicitar waivers. Crea tu cuenta si no la tienes.</p>
+
+    <h3 style="color:var(--accent2);margin-top:16px;">5. Entidades corporativas en PR</h3>
+    <ul style="font-size:.85rem;color:var(--muted);padding-left:18px;line-height:1.8;">
+      <li><strong style="color:var(--text)">Corporación regular:</strong> paga impuesto corporativo al 18.5% (primeros $75k), luego 22-37.5%.</li>
+      <li><strong style="color:var(--text)">LLC:</strong> puede ser tratada como corp o partnership según elección.</li>
+      <li><strong style="color:var(--text)">Act 60 (Decreto):</strong> 4% de tasa fija para ciertos exportadores de servicios. Requiere certificación.</li>
+      <li><strong style="color:var(--text)">Self-employed:</strong> reportas en la planilla individual (482) como ingreso de negocio.</li>
+    </ul>
+
+    <h3 style="color:var(--green);margin-top:16px;">6. Los 5 documentos que debes guardar siempre</h3>
+    <ul style="font-size:.85rem;color:var(--muted);padding-left:18px;line-height:1.8;">
+      <li>📄 Todos tus formularios 480.6 SP (retenciones recibidas)</li>
+      <li>📄 Recibos de gastos de negocio (físicos o digitales)</li>
+      <li>📄 Estados bancarios mensuales</li>
+      <li>📄 Contratos con clientes y proveedores</li>
+      <li>📄 Planillas de años anteriores</li>
+    </ul>
+
+    <div class="note" style="margin-top:16px;">
+      <strong>⚠️ Aviso legal:</strong> Esta guía es información general educativa. No constituye asesoría tributaria ni legal. Para tu situación específica, consulta un <strong style="color:var(--text)">CPA con licencia en Puerto Rico</strong>. Contacta MA Tax & Accounting Services para una consulta gratis.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📞 ¿Necesitas ayuda con tu contabilidad?</h2>
+    <p style="font-size:.9rem;color:var(--muted);">
+      <strong style="color:var(--text)">MA Tax & Accounting Services</strong><br>
+      Milton Ayala Irizarry, CPA Lic. 7720<br>
+      Iguala contable mensual · Planillas · IVU · Estados financieros · Act 60
+    </p>
+    <p style="margin-top:10px;font-size:.85rem;color:var(--muted);">Primera consulta <strong style="color:var(--green)">GRATIS</strong> y sin compromiso. Escríbenos por WhatsApp.</p>
+  </div>
+</div>
+
+<script>
+// ---- TABS ----
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ---- IVU ----
+function getRate() { return parseFloat(document.getElementById('ivu-rate').value) / 100; }
+
+function calcFromBase() {
+  const base = parseFloat(document.getElementById('precio-sin-ivu').value);
+  const r = getRate();
+  if (isNaN(base)) { document.getElementById('res-base').style.display='none'; return; }
+  const ivu = base * r;
+  const total = base + ivu;
+  document.getElementById('res-base').style.display = 'block';
+  document.getElementById('res-base').innerHTML = `
+    <div class="result-row"><span>Precio base</span><span class="val">$${base.toFixed(2)}</span></div>
+    <div class="result-row"><span>IVU (${(r*100).toFixed(1)}%)</span><span class="val red">$${ivu.toFixed(2)}</span></div>
+    <div class="result-row"><span>Total a cobrar</span><span class="val cyan">$${total.toFixed(2)}</span></div>
+  `;
+}
+
+function calcFromTotal() {
+  const total = parseFloat(document.getElementById('precio-con-ivu').value);
+  const r = getRate();
+  if (isNaN(total)) { document.getElementById('res-total').style.display='none'; return; }
+  const base = total / (1 + r);
+  const ivu = total - base;
+  document.getElementById('res-total').style.display = 'block';
+  document.getElementById('res-total').innerHTML = `
+    <div class="result-row"><span>Precio base (sin IVU)</span><span class="val green">$${base.toFixed(2)}</span></div>
+    <div class="result-row"><span>IVU (${(r*100).toFixed(1)}%)</span><span class="val red">$${ivu.toFixed(2)}</span></div>
+    <div class="result-row"><span>Total cobrado</span><span class="val">$${total.toFixed(2)}</span></div>
+  `;
+}
+
+function calcIVU() { calcFromBase(); calcFromTotal(); }
+
+// ---- RETENCIÓN ----
+function calcRetencion() {
+  const monto = parseFloat(document.getElementById('ret-monto').value) || 0;
+  const acumulado = parseFloat(document.getElementById('ret-acumulado').value) || 0;
+  const waiver = document.getElementById('ret-waiver').value === 'si';
+  const el = document.getElementById('res-retencion');
+
+  if (!monto) { el.innerHTML = ''; return; }
+
+  if (waiver) {
+    el.innerHTML = `<div class="result-row"><span>Tiene waiver — NO retener</span><span class="val green">Pagar completo: $${monto.toFixed(2)}</span></div>`;
+    return;
+  }
+
+  const EXENCION = 1500;
+  const exento_disponible = Math.max(0, EXENCION - acumulado);
+  const sujeto = Math.max(0, monto - exento_disponible);
+  const retencion = sujeto * 0.10;
+  const pago_neto = monto - retencion;
+
+  el.innerHTML = `
+    <div class="result-row"><span>Monto del pago</span><span class="val">$${monto.toFixed(2)}</span></div>
+    <div class="result-row"><span>Exención disponible ($1,500 - $${acumulado.toFixed(2)} previo)</span><span class="val green">$${exento_disponible.toFixed(2)}</span></div>
+    <div class="result-row"><span>Sujeto a retención (10%)</span><span class="val">$${sujeto.toFixed(2)}</span></div>
+    <div class="result-row"><span>Retención a remitir a Hacienda (10%)</span><span class="val red">$${retencion.toFixed(2)}</span></div>
+    <div class="result-row"><span>💸 Lo que pagas al proveedor</span><span class="val cyan">$${pago_neto.toFixed(2)}</span></div>
+    ${retencion > 0 ? `<div style="margin-top:8px;font-size:.8rem;color:var(--muted);">Reportar en <strong style="color:var(--text)">480.6 SP</strong> — retención $${retencion.toFixed(2)}</div>` : ''}
+  `;
+}
+
+// ---- TRACKER ----
+function trkKey() {
+  const m = document.getElementById('trk-mes').value.padStart(2,'0');
+  const y = document.getElementById('trk-anio').value;
+  return `kit_fiscal_${y}_${m}`;
+}
+function loadData() { try { return JSON.parse(localStorage.getItem(trkKey()) || '[]'); } catch { return []; } }
+function saveData(d) { localStorage.setItem(trkKey(), JSON.stringify(d)); }
+
+function renderTracker(data) {
+  const tbody = document.getElementById('trk-tbody');
+  tbody.innerHTML = '';
+  let ing=0, gas=0, ivu=0;
+  data.forEach((e,i) => {
+    const tr = document.createElement('tr');
+    const tipo = e.tipo === 'ingreso' ? '<span class="tipo-ingreso">💚 Ingreso</span>' :
+                 e.tipo === 'gasto' ? '<span class="tipo-gasto">🔴 Gasto</span>' :
+                 '<span style="color:#facc15;font-weight:600;">🟡 IVU</span>';
+    tr.innerHTML = `<td>${tipo}</td><td>${e.desc}</td><td>$${parseFloat(e.amt).toFixed(2)}</td><td>${e.date}</td>
+      <td><button class="btn btn-danger" style="padding:2px 8px;font-size:.75rem;" onclick="deleteEntry(${i})">✕</button></td>`;
+    tbody.appendChild(tr);
+    if (e.tipo==='ingreso') ing+=parseFloat(e.amt);
+    if (e.tipo==='gasto') gas+=parseFloat(e.amt);
+    if (e.tipo==='ivu') ivu+=parseFloat(e.amt);
+  });
+  const bal = ing - gas;
+  document.getElementById('s-ingresos').textContent = '$' + ing.toFixed(2);
+  document.getElementById('s-gastos').textContent = '$' + gas.toFixed(2);
+  document.getElementById('s-balance').textContent = (bal>=0?'+':'') + '$' + Math.abs(bal).toFixed(2);
+  document.getElementById('s-balance').style.color = bal >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('s-ivu-cobrado').textContent = '$' + ivu.toFixed(2);
+}
+
+function loadTracker() { renderTracker(loadData()); }
+function deleteEntry(i) { const d=loadData(); d.splice(i,1); saveData(d); renderTracker(d); }
+function clearMonth() { if(confirm('¿Borrar todos los registros de este mes?')) { localStorage.removeItem(trkKey()); renderTracker([]); } }
+
+function addEntry() {
+  const desc = document.getElementById('trk-desc').value.trim();
+  const amt = parseFloat(document.getElementById('trk-amt').value);
+  const tipo = document.getElementById('trk-tipo').value;
+  if (!desc || isNaN(amt) || amt <= 0) { alert('Llena la descripción y el monto.'); return; }
+  const data = loadData();
+  data.unshift({ desc, amt, tipo, date: new Date().toLocaleDateString('es-PR') });
+  saveData(data);
+  renderTracker(data);
+  document.getElementById('trk-desc').value = '';
+  document.getElementById('trk-amt').value = '';
+}
+
+function exportCSV() {
+  const data = loadData();
+  if (!data.length) { alert('No hay datos para exportar.'); return; }
+  const mes = document.getElementById('trk-mes').options[document.getElementById('trk-mes').selectedIndex].text;
+  const anio = document.getElementById('trk-anio').value;
+  let csv = 'Tipo,Descripcion,Monto,Fecha\n';
+  data.forEach(e => { csv += `${e.tipo},"${e.desc}",${e.amt},${e.date}\n`; });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `registro_${mes}_${anio}.csv`;
+  a.click();
+}
+
+// ---- CALENDARIO ----
+const FECHAS = [
+  { date: 'Ene 15', label: 'IVU diciembre', desc: 'Remitir IVU de diciembre anterior via SURI', status: 'done' },
+  { date: 'Feb 15', label: 'IVU enero', desc: 'Remitir IVU de enero via SURI', status: 'done' },
+  { date: 'Mar 15', label: 'IVU febrero', desc: 'Remitir IVU de febrero via SURI', status: 'done' },
+  { date: 'Mar 15', label: 'Retenciones 480.6', desc: 'Informativas de retención del año anterior', status: 'done' },
+  { date: 'Abr 15', label: 'Planilla corporativa', desc: 'Corporaciones: formulario 480.20 (o solicitar extensión)', status: 'done' },
+  { date: 'Abr 15', label: 'Planilla individual (482)', desc: 'Self-employed y patronos individuales: planilla 482 o extensión', status: 'done' },
+  { date: 'Abr 15', label: 'IVU marzo', desc: 'Remitir IVU de marzo via SURI', status: 'done' },
+  { date: 'May 15', label: 'IVU abril', desc: 'Remitir IVU de abril via SURI', status: 'done' },
+  { date: 'Jun 15', label: 'IVU mayo', desc: 'Remitir IVU de mayo via SURI', status: 'urgent' },
+  { date: 'Jul 15', label: 'IVU junio', desc: 'Remitir IVU de junio via SURI' },
+  { date: 'Ago 15', label: 'IVU julio', desc: 'Remitir IVU de julio via SURI' },
+  { date: 'Sep 15', label: 'IVU agosto + extensión corp.', desc: 'IVU de agosto. Corporaciones con extensión: fecha límite final' },
+  { date: 'Oct 15', label: 'IVU septiembre + extensión ind.', desc: 'IVU de septiembre. Individuales con extensión: fecha límite final' },
+  { date: 'Nov 15', label: 'IVU octubre', desc: 'Remitir IVU de octubre via SURI' },
+  { date: 'Dic 15', label: 'IVU noviembre', desc: 'Remitir IVU de noviembre via SURI' },
+];
+
+function renderCalendar() {
+  const list = document.getElementById('cal-list');
+  list.innerHTML = FECHAS.map(f => `
+    <div class="cal-item">
+      <div class="cal-date ${f.status||''}">${f.date}</div>
+      <div class="cal-info">
+        <h4>${f.label}</h4>
+        <p>${f.desc}</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ---- INIT ----
+loadTracker();
+renderCalendar();
+</script>
+</body>
+</html>
